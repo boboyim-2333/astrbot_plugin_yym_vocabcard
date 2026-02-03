@@ -1,5 +1,5 @@
 # AstrBot 每日单词卡片插件
-
+> 喜欢的话可以给个 Star 喵，有问题欢迎提 Issue/PR
 <div align="center">
 
 📚 每日多语种单词卡片推送插件 - 玻璃拟态风格
