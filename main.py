@@ -540,7 +540,7 @@ class VocabCardPlugin(Star):
 
     # ========== 用户命令 ==========
 
-    @filter.command("vocab")
+    @filter.command("vocab", alias=["每日一词","单词卡片"])
     async def cmd_vocab(self, event: AstrMessageEvent):
         """手动获取一个单词卡片"""
         word = await self._select_word()
@@ -575,7 +575,7 @@ class VocabCardPlugin(Star):
             logger.error(f"生成卡片失败: {e}")
             yield event.plain_result(f"❌ 生成卡片失败: {e}")
 
-    @filter.command("vocab_status")
+    @filter.command("vocab_status", alias=["学习进度","单词进度"])
     async def cmd_status(self, event: AstrMessageEvent):
         """查看学习进度"""
         total = len(self.words)
@@ -592,7 +592,7 @@ class VocabCardPlugin(Star):
 ━━━━━━━━━━━━━━━━"""
         yield event.plain_result(msg)
 
-    @filter.command("vocab_register")
+    @filter.command("vocab_register", alias="注册推送")
     async def cmd_register(self, event: AstrMessageEvent):
         """在当前会话注册接收每日单词推送"""
         umo = event.unified_msg_origin
@@ -609,7 +609,7 @@ class VocabCardPlugin(Star):
         push_time = self.config.get("push_time_send", "08:00")
         yield event.plain_result(f"注册成功！🎉\n将在每天 {push_time} 推送单词卡片")
 
-    @filter.command("vocab_unregister")
+    @filter.command("vocab_unregister", alias="取消推送")
     async def cmd_unregister(self, event: AstrMessageEvent):
         """取消当前会话的每日单词推送"""
         umo = event.unified_msg_origin
@@ -868,7 +868,7 @@ class VocabCardPlugin(Star):
             logger.error(f"切换语种失败: {e}")
             yield event.plain_result(f"❌ 切换失败: {e}")
 
-    @filter.command("vocab_help")
+    @filter.command("vocab_help", alias="单词帮助")
     async def cmd_help(self, event: AstrMessageEvent):
         """显示帮助信息"""
         help_msg = """📚 每日单词卡片插件帮助
