@@ -546,6 +546,8 @@ class VocabCardPlugin(Star):
         word = await self._select_word()
         word_text=word.word
         temp_files = []
+        current = self.current_language
+
         if not word:
             yield event.plain_result("没有可用的单词数据")
             return
@@ -555,15 +557,16 @@ class VocabCardPlugin(Star):
             image_path = await self._generate_card_image(word)
             temp_files.append(image_path)
             yield event.image_result(image_path)
-            audio_path = await self._download_audio(word_text, accent="us")
-            if audio_path:
-                temp_files.append(audio_path)
+            if current == "en":
+                audio_path = await self._download_audio(word_text, accent="us")
+                if audio_path:
+                    temp_files.append(audio_path)
                 
                 # 构建并发送语音消息链
-                chain = [Record.fromFileSystem(audio_path)]
-                yield event.chain_result(chain)
-            else:
-                yield event.plain_result("⚠️ 未能获取到该单词的语音发音")
+                    chain = [Record.fromFileSystem(audio_path)]
+                    yield event.chain_result(chain)
+                else:
+                    yield event.plain_result("⚠️ 未能获取到该单词的语音发音")
             # 清理图片
             for file_path in temp_files:
                 if file_path and os.path.exists(file_path):
