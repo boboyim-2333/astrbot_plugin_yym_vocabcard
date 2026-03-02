@@ -10,8 +10,11 @@ from astrbot.api.star import Context, Star, register
 from astrbot.api import logger, AstrBotConfig
 from astrbot.api.event import MessageChain
 import astrbot.api.message_components as Comp
+from astrbot.api.all import * # 确保引入了 Record 等组件
 
 import asyncio
+import aiohttp
+import tempfile
 import datetime
 import json
 import os
@@ -223,7 +226,30 @@ class VocabCardPlugin(Star):
                 logger.error(f"加载进度数据失败: {e}")
 
         return {"sent_words": [], "last_push_date": ""}
-
+    async def _download_audio(self, word_text: str, accent: str = "us") -> str:
+        """
+        异步下载有道词典的发音 MP3
+        :param accent: "us" 美音, "uk" 英音
+        :return: 临时音频文件的路径，失败则返回 None
+        """
+        type_code = 2 if accent == "us" else 1
+        url = f"https://dict.youdao.com/dictvoice?type={type_code}&audio={word_text}"
+        
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, timeout=5) as response:
+                    if response.status == 200:
+                        audio_content = await response.read()
+                        
+                        # 参考你的哈基米插件：使用 tempfile 生成带有 .mp3 后缀的临时文件
+                        with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as temp_file:
+                            temp_file.write(audio_content)
+                            return temp_file.name
+        except Exception as e:
+            # 如果你有 logger，这里可以换成 logger.error
+            print(f"下载 [{word_text}] 的音频失败: {e}")
+            
+        return None
     async def _save_progress(self):
         """保存学习进度（语种特定）- 使用锁防止并发写入"""
         async with self._progress_lock:
@@ -518,6 +544,8 @@ class VocabCardPlugin(Star):
     async def cmd_vocab(self, event: AstrMessageEvent):
         """手动获取一个单词卡片"""
         word = await self._select_word()
+        word_text=word.word
+        temp_files = []
         if not word:
             yield event.plain_result("没有可用的单词数据")
             return
@@ -525,13 +553,24 @@ class VocabCardPlugin(Star):
         # 静默生成，不发送提示
         try:
             image_path = await self._generate_card_image(word)
+            temp_files.append(image_path)
             yield event.image_result(image_path)
-
+            audio_path = await self._download_audio(word_text, accent="us")
+            if audio_path:
+                temp_files.append(audio_path)
+                
+                # 构建并发送语音消息链
+                chain = [Record.fromFileSystem(audio_path)]
+                yield event.chain_result(chain)
+            else:
+                yield event.plain_result("⚠️ 未能获取到该单词的语音发音")
             # 清理图片
-            try:
-                os.remove(image_path)
-            except OSError as e:
-                logger.warning(f"清理临时图片失败: {e}")
+            for file_path in temp_files:
+                if file_path and os.path.exists(file_path):
+                    try:
+                        os.remove(file_path)
+                    except:
+                        pass
         except Exception as e:
             logger.error(f"生成卡片失败: {e}")
             yield event.plain_result(f"❌ 生成卡片失败: {e}")
