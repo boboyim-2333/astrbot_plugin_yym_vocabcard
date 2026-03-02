@@ -557,7 +557,7 @@ class VocabCardPlugin(Star):
             image_path = await self._generate_card_image(word)
             temp_files.append(image_path)
             yield event.image_result(image_path)
-            if current == "en":
+            if current == "english":
                 audio_path = await self._download_audio(word_text, accent="us")
                 if audio_path:
                     temp_files.append(audio_path)
